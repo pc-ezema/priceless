@@ -22,7 +22,7 @@
                             Email Address
                         </label>
                         <div class="admin-input-wrapper">
-                            <input type="email" name="email" id="email" value="admin@priceless.co.uk" required autocomplete="email">
+                            <input type="email" name="email" id="email" required autocomplete="email">
                         </div>
                     </div>
 
@@ -32,7 +32,7 @@
                             Password
                         </label>
                         <div class="admin-input-wrapper password-wrapper">
-                            <input type="password" name="password" id="password" value="admin@priceless.co.uk" required autocomplete="current-password">
+                            <input type="password" name="password" id="password" required autocomplete="current-password">
                             <button type="button" class="toggle-password-btn" id="togglePassword" aria-label="Toggle password visibility">
                                 <i class="fas fa-eye"></i>
                             </button>
