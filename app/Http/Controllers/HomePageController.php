@@ -24,7 +24,7 @@ class HomePageController extends Controller
             'Priceless Beauty Touch - Luxury Beauty & Spa',
             'Experience luxury beauty and spa treatments at Priceless Beauty Touch. Professional hair, makeup, waxing and wig services in London. Book your appointment today!',
             'beauty salon, spa, hair styling, makeup, waxing, wigs, london beauty, priceless beauty touch',
-            url('images/og-image.jpg')
+            url('images/logo.png')
         );
 
         // Add schema markup for one-page site
@@ -212,7 +212,7 @@ class HomePageController extends Controller
         // ---- SEND EMAILS ----
         try {
             // Send email to admin
-            Mail::to("admin@example.com")
+            Mail::to(" admin@pricelessbeauty.co.uk")
                 ->send(new AdminAppointmentMail($appointment));
 
             // Send email to user with waxing documents if applicable
