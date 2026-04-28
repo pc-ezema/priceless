@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->createOrUpdate([
+        User::factory()->firstOrCreate([
             "email" => "admin@priceless.co.uk"
         ], [
             'name' => 'Princeless Admin',
