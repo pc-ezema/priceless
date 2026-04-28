@@ -18,6 +18,26 @@ use Illuminate\Support\Str;
 
 class HomePageController extends Controller
 {
+    public function setBreadcrumbs($breadcrumbs)
+    {
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => []
+        ];
+        
+        foreach ($breadcrumbs as $index => $crumb) {
+            $schema['itemListElement'][] = [
+                '@type' => 'ListItem',
+                'position' => $index + 1,
+                'name' => $crumb['name'],
+                'item' => url($crumb['url'])
+            ];
+        }
+        
+        view()->share('seo_breadcrumbs_schema', $schema);
+    }
+
     public function index()
     {
         $this->setSEO(

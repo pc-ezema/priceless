@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
         ], [
             'name' => 'Princeless Admin',
             'email' => ' admin@pricelessbeauty.co.uk',
-            'password' => bcrypt(' admin@pricelessbeauty.co.uk') // Use a secure password in production
+            'password' => bcrypt('admin@pricelessbeauty.co.uk') // Use a secure password in production
         ]);
     }
 }
