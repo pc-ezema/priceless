@@ -42,8 +42,8 @@ class HomePageController extends Controller
     {
         $this->setSEO(
             'Priceless Beauty Touch - Luxury Beauty & Spa',
-            'Experience luxury beauty and spa treatments at Priceless Beauty Touch. Professional hair, makeup, waxing and wig services in London. Book your appointment today!',
-            'beauty salon, spa, hair styling, makeup, waxing, wigs, london beauty, priceless beauty touch',
+            'Experience luxury beauty and spa treatments at Priceless Beauty Touch in Ashford, Kent. Professional hair, makeup, waxing and wig services. Free parking available near Victoria Park. Book your appointment today!',
+            'beauty salon, spa, hair styling, makeup, waxing, wigs, ashford kent, victoria park, priceless beauty touch',
             url('images/logo.png')
         );
 
@@ -52,26 +52,30 @@ class HomePageController extends Controller
             '@context' => 'https://schema.org',
             '@type' => 'BeautySalon',
             'name' => 'Priceless Beauty Touch',
-            'description' => 'Luxury beauty and spa services in London including hair styling, waxing, wigs, and makeup.',
+            'description' => 'Luxury beauty and spa services in Ashford, Kent including hair styling, waxing, wigs, and makeup. Free parking available near Victoria Park.',
             'url' => url('/'),
             'logo' => url('images/logo.png'),
             'image' => url('images/logo.png'),
             'address' => [
                 '@type' => 'PostalAddress',
-                'streetAddress' => '123 Luxury Lane',
-                'addressLocality' => 'Mayfair',
-                'addressRegion' => 'London',
-                'postalCode' => 'W1S 2HF',
+                'streetAddress' => 'Near Victoria Park',
+                'addressLocality' => 'Ashford',
+                'addressRegion' => 'Kent',
+                'postalCode' => '', // Add postal code if available
                 'addressCountry' => 'UK'
             ],
             'geo' => [
                 '@type' => 'GeoCoordinates',
-                'latitude' => '51.5074',
-                'longitude' => '-0.1278'
+                'latitude' => '51.1465',  // Approximate latitude for Ashford, Kent
+                'longitude' => '0.8736'   // Approximate longitude for Ashford, Kent
             ],
             'telephone' => '+447369277963',
             'email' => 'pricelessbeautytouch@gmail.com',
             'priceRange' => '££',
+            'amenities' => [
+                'Free Parking',
+                'Near Victoria Park'
+            ],
             'openingHoursSpecification' => [
                 [
                     '@type' => 'OpeningHoursSpecification',

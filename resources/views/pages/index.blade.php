@@ -322,6 +322,12 @@
                 <p class="contact-subtitle">We'd love to hear from you</p>
                 <div class="contact-info-wrapper">
                     <div class="contact-info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <a>
+                            Ashford, Kent, close to Victoria Park<br>
+                        </a>
+                    </div>
+                    <div class="contact-info-item">
                         <i class="fas fa-envelope"></i>
                         <a href="mailto:pricelessbeautytouch@gmail.com">pricelessbeautytouch@gmail.com</a>
                     </div>

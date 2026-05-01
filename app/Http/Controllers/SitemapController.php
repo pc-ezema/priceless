@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Service;
 use Illuminate\Http\Request;
 
 class SitemapController extends Controller
@@ -19,10 +20,23 @@ class SitemapController extends Controller
             ['loc' => url('/book-appointment'), 'priority' => '0.9', 'changefreq' => 'weekly', 'lastmod' => now()->toDateString()],
         ];
         
-        // Get dynamic pages from database
-        $services = Service::where('is_active', true)->get();
-        
-        return response()->view('sitemap', compact('pages', 'services'))
+        // Get dynamic pages from database (if you have any)
+        $services = [];
+        if (class_exists('App\Models\Service')) {
+            $services = Service::where('is_active', true)
+                ->orderBy('updated_at', 'desc')
+                ->get()
+                ->map(function ($service) {
+                    return [
+                        'loc' => url('/services/' . \Illuminate\Support\Str::slug($service->name)),
+                        'lastmod' => $service->updated_at->toDateString(),
+                        'changefreq' => 'weekly',
+                        'priority' => '0.8'
+                    ];
+                });
+        }
+
+        return response()->view('sitemap', compact('staticPages', 'services'))
             ->header('Content-Type', 'text/xml');
     }
 }
