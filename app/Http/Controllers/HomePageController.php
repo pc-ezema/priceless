@@ -69,7 +69,7 @@ class HomePageController extends Controller
                 'latitude' => '51.5074',
                 'longitude' => '-0.1278'
             ],
-            'telephone' => '+447956403572',
+            'telephone' => '+447369277963',
             'email' => 'pricelessbeautytouch@gmail.com',
             'priceRange' => '££',
             'openingHoursSpecification' => [

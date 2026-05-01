@@ -201,7 +201,7 @@
                             <i class="fas fa-phone-alt"></i>
                         </div>
                         <h4>Need Help?</h4>
-                        <p>Call us at <a href="tel:+447956403572">+44 7956 403572</a></p>
+                        <p>Call us at <a href="tel:+447369277963">+44 7956 403572</a></p>
                         <p>Email: <a href="mailto:pricelessbeautytouch@gmail.com">pricelessbeautytouch@gmail.com</a></p>
                     </div>
 

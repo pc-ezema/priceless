@@ -3,7 +3,10 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\HomePageController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Artisan;
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 Route::get('/', [HomePageController::class, 'index'])->name('home');
 Route::get('/book-appointment', [HomePageController::class, 'bookAppointment'])->name('book.appointment');

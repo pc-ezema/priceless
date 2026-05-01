@@ -9,7 +9,7 @@
                 <div class="footer-social-links">
                     <a href="https://instagram.com/pricelessbeautytouch1" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                     <a href="mailto:pricelessbeautytouch@gmail.com" aria-label="Email"><i class="fas fa-envelope"></i></a>
-                    <a href="tel:+447956403572" aria-label="Phone"><i class="fas fa-phone-alt"></i></a>
+                    <a href="tel:+447369277963" aria-label="Phone"><i class="fas fa-phone-alt"></i></a>
                     <a href="#" target="_blank" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                 </div>
             </div>
@@ -47,7 +47,9 @@
                         <button type="submit" aria-label="Subscribe"><i class="fas fa-arrow-right"></i></button>
                     </div>
                 </form>
-                <p class="footer-note">Visit us: 123 Luxury Lane, Mayfair, London</p>
+                <p class="footer-note">Location: Ashford kent </p>
+                <p class="footer-note">Parking : Available </p>
+                <p class="footer-note">Close to victoria park</p>
             </div>
         </div>
 

@@ -1,2 +1,17 @@
+# public/robots.txt
+
 User-agent: *
-Disallow:
+Allow: /
+Allow: /book-appointment
+Allow: /sitemap.xml
+
+Disallow: /dashboard/*
+Disallow: /admin/*
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /ajax/*
+Disallow: /api/*
+
+Sitemap: {{ url('/sitemap.xml') }}
+Host: https://pricelessbeautytouch.co.uk

@@ -47,7 +47,7 @@
             <div class="mobile-social">
                 <a href="https://instagram.com/pricelessbeautytouch1" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
                 <a href="mailto:pricelessbeautytouch@gmail.com"><i class="fas fa-envelope"></i></a>
-                <a href="tel:+447956403572"><i class="fas fa-phone-alt"></i></a>
+                <a href="tel:+447369277963"><i class="fas fa-phone-alt"></i></a>
             </div>
         </div>
     </div>

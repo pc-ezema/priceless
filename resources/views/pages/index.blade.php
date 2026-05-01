@@ -327,7 +327,7 @@
                     </div>
                     <div class="contact-info-item">
                         <i class="fas fa-phone-alt"></i>
-                        <a href="tel:+447956403572">+44 7956 403572</a>
+                        <a href="tel:+447369277963">+44 7956 403572</a>
                     </div>
                 </div>
                 <div class="contact-social">
