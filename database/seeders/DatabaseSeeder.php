@@ -16,11 +16,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate([
-            "email" => "admin@pricelessbeauty.co.uk"
+            "email" => "admin@pricelessbeautytouch.co.uk"
         ], [
             'name' => 'Princeless Admin',
-            'email' => 'admin@pricelessbeauty.co.uk',
-            'password' => bcrypt('admin@pricelessbeauty.co.uk') // Use a secure password in production
+            'email' => 'admin@pricelessbeautytouch.co.uk',
+            'password' => bcrypt('admin@pricelessbeautytouch.co.uk') // Use a secure password in production
         ]);
     }
 }
