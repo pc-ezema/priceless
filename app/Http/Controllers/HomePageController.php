@@ -236,7 +236,7 @@ class HomePageController extends Controller
         // ---- SEND EMAILS ----
         try {
             // Send email to admin
-            Mail::to(" admin@pricelessbeauty.co.uk")
+            Mail::to(" admin@pricelessbeautytouch.co.uk")
                 ->send(new AdminAppointmentMail($appointment));
 
             // Send email to user with waxing documents if applicable

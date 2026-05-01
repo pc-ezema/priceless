@@ -13,5 +13,5 @@ Disallow: /logout
 Disallow: /ajax/*
 Disallow: /api/*
 
-Sitemap: {{ url('/sitemap.xml') }}
+Sitemap: https://pricelessbeautytouch.co.uk/sitemap.xml
 Host: https://pricelessbeautytouch.co.uk
