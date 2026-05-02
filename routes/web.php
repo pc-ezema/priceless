@@ -6,7 +6,68 @@ use App\Http\Controllers\HomePageController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Artisan;
 
-Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap.xml', function () {
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    
+    // Main page
+    $xml .= '    <url>' . "\n";
+    $xml .= '        <loc>' . url('/') . '</loc>' . "\n";
+    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '        <changefreq>daily</changefreq>' . "\n";
+    $xml .= '        <priority>1.0</priority>' . "\n";
+    $xml .= '    </url>' . "\n";
+    
+    // Booking page
+    $xml .= '    <url>' . "\n";
+    $xml .= '        <loc>' . url('/book-appointment') . '</loc>' . "\n";
+    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+    $xml .= '        <priority>0.9</priority>' . "\n";
+    $xml .= '    </url>' . "\n";
+    
+    // ADD MORE PAGES HERE - Example:
+    $xml .= '    <url>' . "\n";
+    $xml .= '        <loc>' . url('/#about-us') . '</loc>' . "\n";
+    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '        <changefreq>monthly</changefreq>' . "\n";
+    $xml .= '        <priority>0.8</priority>' . "\n";
+    $xml .= '    </url>' . "\n";
+    
+    $xml .= '    <url>' . "\n";
+    $xml .= '        <loc>' . url('/#services') . '</loc>' . "\n";
+    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+    $xml .= '        <priority>0.9</priority>' . "\n";
+    $xml .= '    </url>' . "\n";
+    
+    $xml .= '    <url>' . "\n";
+    $xml .= '        <loc>' . url('/#gallery') . '</loc>' . "\n";
+    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '        <changefreq>monthly</changefreq>' . "\n";
+    $xml .= '        <priority>0.7</priority>' . "\n";
+    $xml .= '    </url>' . "\n";
+    
+    $xml .= '    <url>' . "\n";
+    $xml .= '        <loc>' . url('/#faqs') . '</loc>' . "\n";
+    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '        <changefreq>monthly</changefreq>' . "\n";
+    $xml .= '        <priority>0.7</priority>' . "\n";
+    $xml .= '    </url>' . "\n";
+    
+    $xml .= '    <url>' . "\n";
+    $xml .= '        <loc>' . url('/#contact-us') . '</loc>' . "\n";
+    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '        <changefreq>monthly</changefreq>' . "\n";
+    $xml .= '        <priority>0.8</priority>' . "\n";
+    $xml .= '    </url>' . "\n";
+    
+    $xml .= '</urlset>';
+    
+    return response($xml, 200)
+        ->header('Content-Type', 'text/xml')
+        ->header('Cache-Control', 'public, max-age=3600');
+});
 
 Route::get('/', [HomePageController::class, 'index'])->name('home');
 Route::get('/book-appointment', [HomePageController::class, 'bookAppointment'])->name('book.appointment');
