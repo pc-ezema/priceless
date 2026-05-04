@@ -42,9 +42,9 @@ class HomePageController extends Controller
     public function index()
     {
         $this->setSEO(
-            'Priceless Beauty Touch - Luxury Beauty & Spa',
-            'Experience luxury beauty and spa treatments at Priceless Beauty Touch in Ashford, Kent. Professional hair, makeup, waxing and wig services. Free parking available near Victoria Park. Book your appointment today!',
-            'beauty salon, spa, hair styling, makeup, waxing, wigs, ashford kent, victoria park, priceless beauty touch',
+            'Priceless Beauty Touch - Luxury Beauty & Spa in Ashford, Kent',
+            'Experience luxury beauty and spa treatments at Priceless Beauty Touch in Ashford, Kent. Professional hair, makeup, waxing, wig services and wood therapy. Free parking near Victoria Park. Book your appointment today!',
+            'beauty salon ashford kent, spa ashford, hair styling ashford, waxing ashford, wood therapy ashford, wigs kent, victoria park ashford',
             url('images/logo.png')
         );
 
@@ -53,7 +53,7 @@ class HomePageController extends Controller
             '@context' => 'https://schema.org',
             '@type' => 'BeautySalon',
             'name' => 'Priceless Beauty Touch',
-            'description' => 'Luxury beauty and spa services in Ashford, Kent including hair styling, waxing, wigs, and makeup. Free parking available near Victoria Park.',
+            'description' => 'Luxury beauty and spa services in Ashford, Kent including hair styling, waxing, wigs, wood therapy, and makeup. Free parking available near Victoria Park.',
             'url' => url('/'),
             'logo' => url('images/logo.png'),
             'image' => url('images/logo.png'),

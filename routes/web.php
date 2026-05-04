@@ -4,9 +4,12 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\HomePageController;
 use App\Http\Controllers\SitemapController;
+use App\Models\Service;
 use Illuminate\Support\Facades\Artisan;
 
 Route::get('/sitemap.xml', function () {
+    $services = Service::where('is_active', true)->get();
+
     $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
     $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
     
@@ -61,6 +64,18 @@ Route::get('/sitemap.xml', function () {
     $xml .= '        <changefreq>monthly</changefreq>' . "\n";
     $xml .= '        <priority>0.8</priority>' . "\n";
     $xml .= '    </url>' . "\n";
+    
+    // ==========================================
+    // ADD YOUR SERVICES FROM DATABASE
+    // ==========================================
+    foreach ($services as $service) {
+        $xml .= '    <url>' . "\n";
+        $xml .= '        <loc>' . url('/#service-' . \Illuminate\Support\Str::slug($service->name)) . '</loc>' . "\n";
+        $xml .= '        <lastmod>' . ($service->updated_at ?? now())->format('Y-m-d') . '</lastmod>' . "\n";
+        $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+        $xml .= '        <priority>0.8</priority>' . "\n";
+        $xml .= '    </url>' . "\n";
+    }
     
     $xml .= '</urlset>';
     

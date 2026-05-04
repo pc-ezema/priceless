@@ -54,6 +54,35 @@
     <!-- Core Stylesheet (No inline styles, all external) -->
     <link rel="stylesheet" href="{{ url('css/app.css') }}">
 
+    <!-- Local Business Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BeautySalon",
+        "name": "Priceless Beauty Touch",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Ashford",
+            "addressRegion": "Kent",
+            "addressCountry": "UK"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 51.1465,
+            "longitude": 0.8736
+        },
+        "priceRange": "££",
+        "telephone": "+447369277963",
+        "openingHours": "Mo-Fr 09:00-18:00, Sa 09:00-20:00"
+    }
+    </script>
+
+    <!-- Location meta tags -->
+    <meta name="geo.region" content="GB-KEN">
+    <meta name="geo.placename" content="Ashford">
+    <meta name="geo.position" content="51.1465;0.8736">
+    <meta name="ICBM" content="51.1465, 0.8736">
+
     @stack('styles')
 </head>
 
