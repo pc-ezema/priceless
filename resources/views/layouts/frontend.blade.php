@@ -55,6 +55,7 @@
     <link rel="stylesheet" href="{{ url('css/app.css') }}">
 
     <!-- Local Business Schema -->
+    @verbatim
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -76,6 +77,7 @@
         "openingHours": "Mo-Fr 09:00-18:00, Sa 09:00-20:00"
     }
     </script>
+    @endverbatim
 
     <!-- Location meta tags -->
     <meta name="geo.region" content="GB-KEN">
