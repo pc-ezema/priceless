@@ -360,7 +360,8 @@ if (appointmentForm) {
                     if (data.redirect) {
                         window.location.href = data.redirect;
                     } else {
-                        appointmentForm.reset();
+                        // Reset the entire form
+                        resetAppointmentForm();
                     }
                 }, 2000);
             } else {
@@ -383,6 +384,117 @@ if (appointmentForm) {
                 </div>
             `;
         });
+    });
+}
+
+// Complete reset function for appointment form
+function resetAppointmentForm() {
+    // Reset standard form fields
+    const form = document.getElementById('appointmentForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Reset add-on checkboxes
+    document.querySelectorAll('.custom-checkbox input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Clear add-ons summary
+    const addonsSummary = document.getElementById('addonsSummary');
+    if (addonsSummary) {
+        addonsSummary.style.display = 'none';
+    }
+    
+    const selectedAddonsList = document.getElementById('selectedAddonsList');
+    if (selectedAddonsList) {
+        selectedAddonsList.innerHTML = '';
+    }
+    
+    const addonsTotalPrice = document.getElementById('addonsTotalPrice');
+    if (addonsTotalPrice) {
+        addonsTotalPrice.textContent = '£0.00';
+    }
+    
+    // Reset calendar selection
+    if (window.appointmentCalendar) {
+        window.appointmentCalendar.selectedDate = null;
+        window.appointmentCalendar.selectedTimeSlot = null;
+        window.appointmentCalendar.currentDate = new Date();
+        window.appointmentCalendar.renderCalendar();
+    }
+    
+    // Clear date display
+    const selectedDateDisplay = document.getElementById('selectedDateDisplay');
+    if (selectedDateDisplay) {
+        selectedDateDisplay.textContent = 'Select a date';
+    }
+    
+    // Clear selected date hidden field
+    const selectedDate = document.getElementById('selectedDate');
+    if (selectedDate) {
+        selectedDate.value = '';
+    }
+    
+    // Hide and clear time slots container
+    const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+    if (timeSlotsContainer) {
+        timeSlotsContainer.style.display = 'none';
+    }
+    
+    const timeSlotsGrid = document.getElementById('timeSlotsGrid');
+    if (timeSlotsGrid) {
+        timeSlotsGrid.innerHTML = '';
+    }
+    
+    // Clear time selection hidden fields
+    const selectedTimeSlot = document.getElementById('selectedTimeSlot');
+    if (selectedTimeSlot) {
+        selectedTimeSlot.value = '';
+    }
+    
+    const selectedTimeDisplay = document.getElementById('selectedTimeDisplay');
+    if (selectedTimeDisplay) {
+        selectedTimeDisplay.value = '';
+    }
+    
+    const appointmentTime = document.querySelector('input[name="appointment_time"]');
+    if (appointmentTime) {
+        appointmentTime.value = '';
+    }
+    
+    // Remove any selected time display
+    const selectedTimeDisplayArea = document.querySelector('.selected-time-display');
+    if (selectedTimeDisplayArea) {
+        selectedTimeDisplayArea.remove();
+    }
+    
+    // Remove selected class from any selected calendar days
+    document.querySelectorAll('.calendar-day.selected').forEach(day => {
+        day.classList.remove('selected');
+    });
+    
+    // Remove selected class from any selected time slots
+    document.querySelectorAll('.time-slot-10min.selected').forEach(slot => {
+        slot.classList.remove('selected');
+    });
+    
+    // Reset service selection dropdown
+    const serviceSelect = document.getElementById('service');
+    if (serviceSelect) {
+        serviceSelect.selectedIndex = 0;
+    }
+    
+    // Reset service summary if exists
+    const serviceSummary = document.querySelector('.service-summary');
+    if (serviceSummary) {
+        serviceSummary.style.display = 'none';
+    }
+    
+    // Clear any error messages
+    document.querySelectorAll('.error-message').forEach(error => {
+        error.classList.remove('show');
+        error.innerHTML = '';
     });
 }
 
@@ -1227,3 +1339,310 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 });
+
+// ============================================
+// APPOINTMENT CALENDAR 
+// ============================================
+
+class AppointmentCalendar {
+    constructor() {
+        this.currentDate = new Date();
+        this.selectedDate = null;
+        this.selectedTimeSlot = null;
+        
+        console.log('Calendar initialized');
+        this.init();
+    }
+    
+    init() {
+        this.renderCalendar();
+        this.attachEvents();
+    }
+    
+    async renderCalendar() {
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        
+        const calendarGrid = document.getElementById('calendarGrid');
+        if (!calendarGrid) {
+            console.error('Calendar grid not found!');
+            return;
+        }
+        
+        calendarGrid.innerHTML = '<div class="loading-calendar">Loading calendar...</div>';
+        
+        try {
+            console.log(`Fetching slots for month: ${month + 1}, year: ${year}`);
+            const response = await fetch(`/available-slots?month=${month + 1}&year=${year}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const calendarData = await response.json();
+            console.log('Calendar data received:', calendarData);
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('currentMonthYear').textContent = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+            
+            let calendarHTML = '';
+            
+            // Previous month days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = prevMonthDays - i;
+                calendarHTML += `<div class="calendar-day other-month disabled">${day}</div>`;
+            }
+            
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const hasSlots = calendarData[dateString]?.has_slots || false;
+                const isPast = new Date(year, month, day) < new Date(new Date().setHours(0, 0, 0, 0));
+                
+                let classes = 'calendar-day';
+                if (isPast) {
+                    classes += ' disabled';
+                } else if (hasSlots) {
+                    classes += ' available';
+                }
+                
+                if (this.selectedDate === dateString) {
+                    classes += ' selected';
+                }
+                
+                calendarHTML += `<div class="${classes}" data-date="${dateString}">${day}</div>`;
+            }
+            
+            // Next month days
+            const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+            const remainingCells = totalCells - (firstDay + daysInMonth);
+            for (let i = 1; i <= remainingCells; i++) {
+                calendarHTML += `<div class="calendar-day other-month disabled">${i}</div>`;
+            }
+            
+            calendarGrid.innerHTML = calendarHTML;
+            
+            // Attach click events
+            const availableDays = document.querySelectorAll('.calendar-day.available');
+            console.log(`Found ${availableDays.length} available days`);
+            
+            availableDays.forEach(day => {
+                day.addEventListener('click', () => {
+                    console.log('Day clicked:', day.dataset.date);
+                    this.selectDate(day.dataset.date);
+                });
+            });
+            
+            if (availableDays.length === 0) {
+                console.log('No available days found. Make sure you have time slots created in the database.');
+            }
+            
+        } catch (error) {
+            console.error('Error loading calendar:', error);
+            calendarGrid.innerHTML = '<div class="error-calendar">Error loading calendar. Please refresh.</div>';
+        }
+    }
+    
+    async selectDate(date) {
+        console.log('Selecting date:', date);
+        
+        // Remove previous selection
+        document.querySelectorAll('.calendar-day.selected').forEach(day => {
+            day.classList.remove('selected');
+        });
+        
+        const selectedDay = document.querySelector(`.calendar-day[data-date="${date}"]`);
+        if (selectedDay) {
+            selectedDay.classList.add('selected');
+        }
+        
+        this.selectedDate = date;
+        document.getElementById('selectedDate').value = date;
+        console.log('Selected date set to:', date);
+        
+        await this.loadTimeSlots(date);
+        
+        const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+        if (timeSlotsContainer) {
+            timeSlotsContainer.style.display = 'block';
+            console.log('Time slots container shown');
+        }
+    }
+    
+    async loadTimeSlots(date) {
+        console.log('Loading time slots for date:', date);
+        const timeSlotsGrid = document.getElementById('timeSlotsGrid');
+        if (!timeSlotsGrid) {
+            console.error('Time slots grid not found!');
+            return;
+        }
+        
+        timeSlotsGrid.innerHTML = '<div class="loading-slots"><i class="fas fa-spinner fa-spin"></i><br>Loading available times...</div>';
+        
+        try {
+            const response = await fetch(`/slots/${date}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const slots = data.slots || data;
+            
+            console.log('Time slots received:', slots);
+            
+            if (slots.length === 0) {
+                timeSlotsGrid.innerHTML = `
+                    <div class="no-slots">
+                        <i class="fas fa-calendar-times"></i>
+                        No available time slots for this date
+                        <br><small>Please select another date</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            let slotsHTML = '';
+            slots.forEach(slot => {
+                const isAvailable = slot.is_available;
+
+                slotsHTML += `
+                    <div class="time-slot-10min ${isAvailable ? 'available' : 'booked'}" 
+                        data-slot-id="${slot.id}" 
+                        data-time-slot-id="${slot.time_slot_id}"
+                        data-start-time="${slot.start_time}"
+                        data-start-display="${slot.start_display}"
+                        ${isAvailable ? 'data-available="true"' : ''}>
+                        <span class="slot-time">${slot.start_display}</span>
+                        ${isAvailable ? 
+                            '<span class="slot-available">Available</span>' : 
+                            '<span class="slot-booked">Booked</span>'
+                        }
+                    </div>
+                `;
+            });
+            
+            timeSlotsGrid.innerHTML = slotsHTML;
+            
+            // Attach click events only to available slots
+            document.querySelectorAll('.time-slot-10min.available').forEach(slot => {
+                slot.addEventListener('click', () => this.selectTimeSlot(slot));
+            });
+            
+        } catch (error) {
+            console.error('Error loading time slots:', error);
+            timeSlotsGrid.innerHTML = '<div class="error-slots"><i class="fas fa-exclamation-circle"></i><br>Error loading time slots. Please refresh.</div>';
+        }
+    }
+
+    selectTimeSlot(slotElement) {
+        console.log('Time slot selected');
+        
+        // Remove previous selection
+        document.querySelectorAll('.time-slot-10min.selected').forEach(slot => {
+            slot.classList.remove('selected');
+        });
+        
+        // Highlight selected
+        slotElement.classList.add('selected');
+        
+        const slotId = slotElement.dataset.slotId;
+        const timeSlotId = slotElement.dataset.timeSlotId;
+        const startTime = slotElement.dataset.startTime;
+        const startDisplay = slotElement.dataset.startDisplay;
+        const endDisplay = slotElement.dataset.endDisplay;
+        
+        // Store in hidden fields
+        document.getElementById('selectedTimeSlot').value = timeSlotId;
+        document.getElementById('selectedTimeDisplay').value = `${startDisplay}`;
+        
+        // Set appointment time (24-hour format for database)
+        const appointmentTimeField = document.querySelector('input[name="appointment_time"]');
+        if (appointmentTimeField) {
+            appointmentTimeField.value = startTime;
+        }
+        
+        // Show selected time display
+        this.showSelectedTime(startDisplay, endDisplay);
+        
+        console.log('Time selected:', {
+            slotId: slotId,
+            timeSlotId: timeSlotId,
+            time: startDisplay,
+            dbTime: startTime
+        });
+    }
+
+    showSelectedTime(startDisplay, endDisplay) {
+        // Remove existing display
+        const existingDisplay = document.querySelector('.selected-time-display');
+        if (existingDisplay) existingDisplay.remove();
+        
+        const display = document.createElement('div');
+        display.className = 'selected-time-display';
+        display.innerHTML = `
+            <div class="selected-time-card">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <div class="selected-time-label">Selected Time (London Timezone)</div>
+                    <div class="selected-time-value">${startDisplay}</div>
+                </div>
+                <button type="button" class="change-time-btn">Change</button>
+            </div>
+        `;
+        
+        const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+        if (timeSlotsContainer) {
+            timeSlotsContainer.insertAdjacentElement('afterend', display);
+        }
+        
+        display.querySelector('.change-time-btn')?.addEventListener('click', () => {
+            document.querySelectorAll('.time-slot-10min.selected').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+            document.getElementById('selectedTimeSlot').value = '';
+            document.getElementById('selectedTimeDisplay').value = '';
+            document.querySelector('input[name="appointment_time"]').value = '';
+            display.remove();
+        });
+        
+        display.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    attachEvents() {
+        const prevBtn = document.getElementById('prevMonth');
+        const nextBtn = document.getElementById('nextMonth');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                console.log('Previous month clicked');
+                this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+                this.renderCalendar();
+                document.getElementById('timeSlotsContainer').style.display = 'none';
+                this.selectedDate = null;
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                console.log('Next month clicked');
+                this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+                this.renderCalendar();
+                document.getElementById('timeSlotsContainer').style.display = 'none';
+                this.selectedDate = null;
+            });
+        }
+    }
+}
+
+// Initialize calendar on booking page
+if (document.querySelector('.calendar-container')) {
+    console.log('Calendar container found, initializing...');
+    new AppointmentCalendar();
+} else {
+    console.log('Calendar container not found');
+}

@@ -66,6 +66,18 @@
                         </div>
                     </a>
 
+                    <!-- TIME SLOTS CARD -->
+                    <a href="{{ route('dashboard.time-slots') }}" class="dash-card" data-hover="ripple">
+                        <div class="card-icon-wrapper">
+                            <i class="fa-solid fa-clock dash-icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Time Slots</h3>
+                            <p>Manage available time slots for appointments</p>
+                            <span class="card-link">View all <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </a>
+
                     <!-- SERVICES CARD -->
                     <a href="{{ route('dashboard.services') }}" class="dash-card" data-hover="ripple">
                         <div class="card-icon-wrapper">

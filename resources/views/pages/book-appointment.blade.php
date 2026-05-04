@@ -139,22 +139,52 @@
                             </div>
                         </div>
 
-                        <!-- Date & Time Selection -->
+                        {{-- Appointment Date and Time Section with Calendar --}}
                         <div class="form-section">
-                            <h3 class="section-title">Schedule Your Appointment</h3>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="appointment_date">Preferred Date <span class="required">*</span></label>
-                                    <input type="date" id="appointment_date" name="appointment_date" required>
-                                    <i class="fas fa-calendar-alt input-icon"></i>
+                            <h3 class="section-title">Select Date & Time</h3>
+                            
+                            <!-- Calendar -->
+                            <div class="calendar-container">
+                                <div class="calendar-header">
+                                    <button type="button" id="prevMonth" class="calendar-nav">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <h3 id="currentMonthYear">May 2026</h3>
+                                    <button type="button" id="nextMonth" class="calendar-nav">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="appointment_time">Preferred Time <span class="required">*</span></label>
-                                    <input type="time" id="appointment_time" name="appointment_time" required>
-                                    <i class="fas fa-clock input-icon"></i>
+                                
+                                <div class="calendar-weekdays">
+                                    <div>Sun</div>
+                                    <div>Mon</div>
+                                    <div>Tue</div>
+                                    <div>Wed</div>
+                                    <div>Thu</div>
+                                    <div>Fri</div>
+                                    <div>Sat</div>
+                                </div>
+                                
+                                <div id="calendarGrid" class="calendar-grid">
+                                    <!-- Calendar cells will be populated by JavaScript -->
                                 </div>
                             </div>
+                            
+                            <!-- Time Slots -->
+                            <div id="timeSlotsContainer" class="time-slots-container" style="display: none;">
+                                <label>
+                                    <i class="fas fa-clock" style="margin-right: 0.5rem; color: #b37d97;"></i>
+                                    Choose your preferred time <span class="required">*</span>
+                                </label>
+                                <div id="timeSlotsGrid" class="time-slots-grid">
+                                    <!-- Time slots will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden fields for form submission -->
+                            <input type="hidden" name="appointment_date" id="selectedDate" required>
+                            <input type="hidden" name="appointment_time" id="selectedTimeDisplay" required>
+                            <input type="hidden" name="time_slot_id" id="selectedTimeSlot" required>
                         </div>
 
                         <!-- Special Instructions -->

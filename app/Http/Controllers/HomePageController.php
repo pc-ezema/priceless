@@ -7,6 +7,7 @@ use App\Mail\UserAppointmentMail;
 use App\Models\Addon;
 use App\Models\Appointment;
 use App\Models\Service;
+use App\Models\TimeSlot;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -218,8 +219,31 @@ class HomePageController extends Controller
 
         $validated = $validator->validated();
 
+        $existingCount = Appointment::where('appointment_date', $validated['appointment_date'])
+            ->where('appointment_time', $validated['appointment_time'])
+            ->where('status', '!=', 'cancelled')
+            ->count();
+        
+        // Get max bookings from your time_slots table for this time range
+        $timeSlot = TimeSlot::where('date', $validated['appointment_date'])
+            ->where('start_time', '<=', $validated['appointment_time'])
+            ->where('end_time', '>', $validated['appointment_time'])
+            ->first();
+
+        $maxBookings = $timeSlot->max_bookings ?? 1;
+    
+        if ($existingCount >= $maxBookings) {
+            return response()->json([
+                "status" => false,
+                "message" => "This time slot is no longer available. Please select another time."
+            ], 422);
+        }
+
         // Store appointment
         $appointment = Appointment::create($validated);
+
+        // INCREMENT THE CURRENT_BOOKINGS COUNTER
+        $timeSlot->increment('current_bookings');
         
         // CHECK IF THE SERVICE IS IN WAXING CATEGORY
         $isWaxingService = false;
@@ -632,5 +656,297 @@ class HomePageController extends Controller
         $addon->save();
         
         return redirect()->back()->with('success', 'Add-on status updated!');
+    }
+
+    public function getData(Request $request)
+    {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        
+        $slots = TimeSlot::whereBetween('date', [$startDate, $endDate])->get();
+        
+        $data = [];
+        foreach ($slots as $slot) {
+            $hour = date('G', strtotime($slot->start_time));
+            $key = $slot->date . '_' . $hour;
+            $data[$key] = [
+                'id' => $slot->id,
+                'start_time' => date('g:i A', strtotime($slot->start_time)),
+                'end_time' => date('g:i A', strtotime($slot->end_time)),
+                'max_bookings' => $slot->max_bookings,
+                'current_bookings' => $slot->current_bookings,
+                'status' => $slot->status,
+            ];
+        }
+        
+        return response()->json($data);
+    }
+
+    public function indexTimeSlot(Request $request)
+    {
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->get('end_date', Carbon::now()->endOfMonth()->toDateString());
+        
+        $timeSlots = TimeSlot::whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy('date');
+        
+        return view('admin.time-slots.index', compact('timeSlots', 'startDate', 'endDate'));
+    }
+
+    public function createTimeSlot()
+    {
+        return view('admin.time-slots.create');
+    }
+
+    public function storeTimeSlot(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'date' => 'required|date|after_or_equal:today',
+            'start_time' => 'required',
+            'end_time' => 'required|after:start_time',
+            'max_bookings' => 'required|integer|min:1|max:10',
+            'status' => 'required|in:available,blocked'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // Check for existing slot
+        $exists = TimeSlot::where('date', $request->date)->exists();
+
+        if ($exists) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'A time slot for this date already exists. Please edit the existing slot or choose a different date.'], 422);
+            }
+        }
+
+        $timeSlot = TimeSlot::create($request->all());
+
+        return response()->json(['success' => true, 'message' => 'Time slot created successfully', 'data' => $timeSlot]);
+    }
+
+    public function editTimeSlot(TimeSlot $timeSlot)
+    {
+        // Return JSON for AJAX requests
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'id' => $timeSlot->id,
+                'date' => $timeSlot->date,
+                'start_time' => $timeSlot->start_time,
+                'end_time' => $timeSlot->end_time,
+                'max_bookings' => $timeSlot->max_bookings,
+                'current_bookings' => $timeSlot->current_bookings,
+                'status' => $timeSlot->status,
+            ]);
+        }
+        
+        // For non-AJAX requests (fallback)
+        return view('admin.time-slots.edit', compact('timeSlot'));
+    }
+
+    public function updateTimeSlot(Request $request, TimeSlot $timeSlot)
+    {
+        $validator = Validator::make($request->all(), [
+            'start_time' => 'required',
+            'end_time' => 'required|after:start_time',
+            'max_bookings' => 'required|integer|min:1|max:10',
+            'status' => 'required|in:available,blocked'  // Removed 'booked' as it's auto-managed
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $timeSlot->update([
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'max_bookings' => $request->max_bookings,
+            'status' => $request->status,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Time slot updated successfully']);
+    }
+
+    public function destroyTimeSlot(TimeSlot $timeSlot)
+    {
+        $timeSlot->delete();
+        return response()->json(['success' => true, 'message' => 'Time slot deleted successfully']);
+    }
+
+    public function bulkCreate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_time' => 'required',
+            'end_time' => 'required|after:start_time',
+            'max_bookings' => 'required|integer|min:1|max:10',
+            'repeat_days' => 'array',
+            'repeat_days.*' => 'in:mon,tue,wed,thu,fri,sat,sun'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $startDate = Carbon::parse($request->start_date);
+        $endDate = Carbon::parse($request->end_date);
+        $repeatDays = $request->repeat_days ?? [];
+        $created = 0;
+
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            // Check if we should create for this day
+            if (!empty($repeatDays)) {
+                $dayName = strtolower($date->format('D'));
+                if (!in_array($dayName, $repeatDays)) {
+                    continue;
+                }
+            }
+
+            // Check if slot already exists
+            $exists = TimeSlot::where('date', $date->toDateString())
+                ->where('start_time', $request->start_time)
+                ->exists();
+
+            if (!$exists) {
+                TimeSlot::create([
+                    'date' => $date->toDateString(),
+                    'start_time' => $request->start_time,
+                    'end_time' => $request->end_time,
+                    'max_bookings' => $request->max_bookings,
+                    'status' => 'available'
+                ]);
+                $created++;
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => "Created {$created} time slots"]);
+    }
+
+    // API endpoint for frontend calendar
+    public function getAvailableSlots(Request $request)
+    {
+        $month = $request->get('month', Carbon::now()->month);
+        $year = $request->get('year', Carbon::now()->year);
+        
+        $startDate = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+        $endDate = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+        
+        $slots = TimeSlot::whereBetween('date', [$startDate, $endDate])
+            ->where('status', 'available')
+            ->whereRaw('current_bookings < max_bookings')
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+        
+        $calendar = [];
+        $currentDate = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        
+        while ($currentDate <= $end) {
+            $dateString = $currentDate->toDateString();
+            $calendar[$dateString] = [
+                'date' => $dateString,
+                'has_slots' => false,
+                'slots' => []
+            ];
+            $currentDate->addDay();
+        }
+        
+        foreach ($slots as $slot) {
+            $dateString = $slot->date->toDateString();
+            if (isset($calendar[$dateString])) {
+                $calendar[$dateString]['has_slots'] = true;
+                // Store the range info
+                $calendar[$dateString]['range'] = [
+                    'start' => Carbon::parse($slot->start_time)->format('g:i A'),
+                    'end' => Carbon::parse($slot->end_time)->format('g:i A'),
+                    'slot_id' => $slot->id
+                ];
+            }
+        }
+        
+        return response()->json($calendar);
+    }
+
+    public function getSlotsByDate($date)
+    {
+        // Get available time slots
+        $timeSlots = TimeSlot::where('date', $date)
+            ->where('status', 'available')
+            ->get();
+
+        // Get booked appointments
+        $appointments = Appointment::where('appointment_date', $date)
+            ->where('status', '!=', 'cancelled')
+            ->get();
+
+        $individualSlots = [];
+
+        foreach ($timeSlots as $slot) {
+            $slotStart = Carbon::parse($slot->start_time);
+            $slotEnd = Carbon::parse($slot->end_time);
+
+            // Start EXACTLY from slot start
+            $current = $slotStart->copy();
+
+            while ($current < $slotEnd) {
+                $windowStart = $current->copy();
+                $windowEnd = $current->copy()->addMinutes(10);
+
+                // Prevent overflow beyond slot end
+                if ($windowStart >= $slotEnd) {
+                    break;
+                }
+
+                // 🔥 COUNT BOOKINGS IN THIS WINDOW (ACCURATE)
+                $currentBookings = 0;
+
+                foreach ($appointments as $appointment) {
+                    $appointmentTime = Carbon::parse($appointment->appointment_time);
+
+                    if ($appointmentTime >= $windowStart && $appointmentTime < $windowEnd) {
+                        $currentBookings++;
+                    }
+                }
+
+                // ✔ Choose your availability logic
+
+                // OPTION A: Allow multiple bookings up to max
+                // $isAvailable = $currentBookings < $slot->max_bookings;
+
+                // OPTION B: Only 1 booking per slot (uncomment if needed)
+                $isAvailable = $currentBookings === 0;
+
+                // Debug log (optional)
+                // Log::info([
+                //     'window' => $windowStart->format('H:i'),
+                //     'bookings' => $currentBookings,
+                //     'isAvailable' => $isAvailable
+                // ]);
+
+                $individualSlots[] = [
+                    'id' => $slot->id . '_' . $windowStart->format('H:i'),
+                    'time_slot_id' => $slot->id,
+                    'start_time' => $windowStart->format('H:i:s'),
+                    'start_display' => $windowStart->format('g:i A'),
+                    'end_time' => $windowEnd->format('H:i:s'),
+                    'end_display' => $windowEnd->format('g:i A'),
+                    'max_bookings' => $slot->max_bookings,
+                    'current_bookings' => $currentBookings,
+                    'available_spots' => $slot->max_bookings - $currentBookings,
+                    'is_available' => $isAvailable
+                ];
+
+                // Move forward 10 mins
+                $current->addMinutes(10);
+            }
+        }
+
+        return response()->json($individualSlots);
     }
 }

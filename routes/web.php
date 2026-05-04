@@ -83,6 +83,9 @@ Route::get('/appointment/confirmation', function() {
     return view('pages.appointment-confirmation');
 })->name('appointment.confirmation');
 
+Route::get('/available-slots', [HomePageController::class, 'getAvailableSlots']);
+Route::get('/slots/{date}', [HomePageController::class, 'getSlotsByDate']);
+
 Route::get('/login', function() {
     return view('admin.login');
 })->name('login');
@@ -117,7 +120,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/appointments', [HomePageController::class, 'appointments'])->name('dashboard.appointments');
     Route::patch('/appointments/{appointment}/status', [HomePageController::class, 'updateStatus'])->name('appointments.updateStatus');
     
-     // Dashboard Stats
+    // Time Slot Management Routes
+    Route::get('/dashboard/time-slots', [HomePageController::class, 'indexTimeSlot'])->name('dashboard.time-slots');
+    Route::get('/dashboard/time-slots/data', [HomePageController::class, 'getData'])->name('time-slots.data');
+    Route::get('/dashboard/time-slots/create', [HomePageController::class, 'createTimeSlot'])->name('time-slots.create');
+    Route::post('/dashboard/time-slots', [HomePageController::class, 'storeTimeSlot'])->name('time-slots.store');
+    Route::get('/dashboard/time-slots/{timeSlot}/edit', [HomePageController::class, 'editTimeSlot'])->name('time-slots.edit');
+    Route::put('/dashboard/time-slots/{timeSlot}', [HomePageController::class, 'updateTimeSlot'])->name('time-slots.update');
+    Route::delete('/dashboard/time-slots/{timeSlot}', [HomePageController::class, 'destroyTimeSlot'])->name('time-slots.destroy');
+
+    // Dashboard Stats
     Route::get('/dashboard/stats', [HomePageController::class, 'getStats'])->name('dashboard.stats');
     
     // Customers
