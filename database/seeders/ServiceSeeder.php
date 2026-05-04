@@ -250,6 +250,46 @@ class ServiceSeeder extends Seeder
                 'sort_order' => 8,
                 'is_active' => true,
             ],
+
+            // ============================================
+            // WOOD THERAPY SERVICES
+            // ============================================
+            [
+                'category' => 'Wood Therapy',
+                'name' => 'Full Body',
+                'price' => 120.00,
+                'duration' => '60 mins',
+                'description' => 'Full body wood therapy treatment targeting fat reduction, lymphatic drainage, and body contouring.',
+                'sort_order' => 8,
+                'is_active' => true,
+            ],
+            [
+                'category' => 'Wood Therapy',
+                'name' => 'Half Body',
+                'price' => 75.00,
+                'duration' => '45 mins',
+                'description' => 'Focused wood therapy treatment for either upper or lower body to improve circulation and tone.',
+                'sort_order' => 9,
+                'is_active' => true,
+            ],
+            [
+                'category' => 'Wood Therapy',
+                'name' => 'Brazilian Contouring',
+                'price' => 95.00,
+                'duration' => '45 mins',
+                'description' => 'Specialized wood therapy targeting the waist, hips, and buttocks for shaping and contour enhancement.',
+                'sort_order' => 10,
+                'is_active' => true,
+            ],
+            [
+                'category' => 'Wood Therapy',
+                'name' => 'Combo',
+                'price' => 110.00,
+                'duration' => '60 mins',
+                'description' => 'Combination wood therapy session focusing on multiple body areas for enhanced sculpting results.',
+                'sort_order' => 11,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($services as $service) {

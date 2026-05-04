@@ -404,7 +404,7 @@ class HomePageController extends Controller
 
     public function createService()
     {
-        $categories = ['Hair Care & Styling', 'Wig Services', 'Waxing Services'];
+        $categories = ['Hair Care & Styling', 'Wig Services', 'Waxing Services', 'Wood Therapy'];
         return view('admin.services.create', compact('categories'));
     }
 
@@ -450,7 +450,7 @@ class HomePageController extends Controller
 
     public function editService(Service $service)
     {
-        $categories = ['Hair Care & Styling', 'Wig Services', 'Waxing Services'];
+        $categories = ['Hair Care & Styling', 'Wig Services', 'Waxing Services', 'Wood Therapy'];
         return view('admin.services.edit', compact('service', 'categories'));
     }
 
