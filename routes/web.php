@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\HomePageController;
-use App\Http\Controllers\SitemapController;
 use App\Models\Service;
 use Illuminate\Support\Facades\Artisan;
 
