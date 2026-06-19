@@ -163,6 +163,21 @@
                             <p>Due to limited space, please <strong>check in advance</strong> before bringing anyone along.</p>
                         </div>
                     </div>
+
+                    <!-- Hair Requirements -->
+                    <div class="policy-card policy-highlight">
+                        <div class="policy-card-icon">
+                            <i class="fas fa-braille"></i>
+                        </div>
+                        <div class="policy-card-content">
+                            <h4>Hair Requirements</h4>
+                            <ul class="policy-items-list">
+                                <li>Bring <strong>4 packs of pre-stretched X-Pression braiding hair</strong> to your appointment</li>
+                                <li>We only work with <strong>pre-stretched hair</strong> to ensure the best finish and save time during your service</li>
+                                <li>If you don't have hair, you can <strong>purchase it as an add-on during booking</strong> or through our website before your appointment</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="booking-form-container">
