@@ -91,7 +91,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="slotDate">Date <span class="required">*</span></label>
-                    <input type="date" id="slotDate" name="date" required>
+                    <input type="date" id="slotDate" name="date" min="{{ date('Y-m-d') }}" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -134,11 +134,11 @@
         <div class="modal-body">
             <div class="form-group">
                 <label>Start Date <span class="required">*</span></label>
-                <input type="date" id="bulkStartDate" class="form-control" required>
+                <input type="date" id="bulkStartDate" class="form-control" min="{{ date('Y-m-d') }}" required>
             </div>
             <div class="form-group">
                 <label>End Date <span class="required">*</span></label>
-                <input type="date" id="bulkEndDate" class="form-control" required>
+                <input type="date" id="bulkEndDate" class="form-control" min="{{ date('Y-m-d') }}" required>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -827,6 +827,12 @@
 .nav-btn:active {
     transform: scale(0.95);
 }
+
+.past-date {
+    opacity: 0.5;
+    pointer-events: none; /* disables clicking on edit/delete buttons inside */
+    background: #f9f9f9;
+}
 </style>
 @endpush
 
@@ -904,13 +910,15 @@
         }
         
         try {
-            const response = await fetch(`/dashboard/time-slots/data?start_date=${startDate}&end_date=${endDate}`);
+            const url = `/dashboard/time-slots/data?start_date=${startDate}&end_date=${endDate}&_=${Date.now()}`;
+            const response = await fetch(url);
             const data = await response.json();
             timeSlotsData = data;
             renderView();
             updateStats();
         } catch (error) {
             console.error('Error loading time slots:', error);
+            showNotification('Failed to load time slots. Please refresh.', 'error');
         }
     }
     
@@ -928,8 +936,7 @@
         const { start, end } = getWeekRange(currentDate);
         const dates = [];
         const headers = [];
-        
-        // Build dates array
+
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const dateStr = formatDate(d);
             dates.push(dateStr);
@@ -940,8 +947,7 @@
                 isToday: formatDate(d) === formatDate(new Date())
             });
         }
-        
-        // Render headers
+
         const thead = document.getElementById('tableHeaders');
         thead.innerHTML = `
             <tr>
@@ -949,8 +955,7 @@
                 ${headers.map(h => `<th class="${h.isToday ? 'today-header' : ''}">${h.day}<br><small>${h.dateNum}</small></th>`).join('')}
             </tr>
         `;
-        
-        // Generate time slots (9 AM to 8 PM)
+
         const timeSlots = [];
         for (let hour = 9; hour <= 20; hour++) {
             const displayHour = hour > 12 ? hour - 12 : hour;
@@ -958,55 +963,63 @@
             const timeLabel = `${displayHour}:00 ${ampm}`;
             timeSlots.push({ hour, label: timeLabel });
         }
-        
-        // Build table body
+
+        const todayStr = formatDate(new Date());
         const tbody = document.getElementById('timeSlotsBody');
         let bodyHTML = '';
-        
+
         for (const slot of timeSlots) {
             bodyHTML += '<tr>';
             bodyHTML += `<td class="slot-time-label"><strong>${slot.label}</strong></td>`;
-            
+
             for (const date of dates) {
-                const slotKey = `${date}_${slot.hour}`;
-                const slotData = timeSlotsData[slotKey];
-                
-                if (slotData) {
-                    const statusClass = slotData.status === 'blocked' ? 'blocked' : '';
-                    const bookingsText = slotData.current_bookings > 0 ? `(${slotData.current_bookings}/${slotData.max_bookings})` : '';
-                    
-                    bodyHTML += `
-                        <td class="slot-cell">
+                const isPast = date < todayStr;
+                const slotsForDate = timeSlotsData[date] || [];
+                const hasAnySlot = slotsForDate.length > 0; // ← check if date already has any slot
+                const matchingSlots = slotsForDate.filter(s => s.hour === slot.hour);
+
+                if (matchingSlots.length > 0) {
+                    let slotsHTML = '';
+                    matchingSlots.forEach(s => {
+                        const statusClass = s.status === 'blocked' ? 'blocked' : '';
+                        const bookingsText = s.current_bookings > 0 ? `(${s.current_bookings}/${s.max_bookings})` : '';
+                        slotsHTML += `
                             <div class="slot-item ${statusClass}">
-                                <span class="slot-time">${slotData.start_time} - ${slotData.end_time}</span>
+                                <span class="slot-time">${s.start_time} - ${s.end_time}</span>
                                 <span class="slot-bookings">${bookingsText}</span>
                                 <div class="slot-actions">
-                                    <button class="edit-slot" data-id="${slotData.id}" title="Edit">
+                                    <button class="edit-slot" data-id="${s.id}" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="delete-slot" data-id="${slotData.id}" title="Delete">
+                                    <button class="delete-slot" data-id="${s.id}" title="Delete">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
                             </div>
-                        </td>
-                    `;
+                        `;
+                    });
+                    bodyHTML += `<td class="slot-cell${isPast ? ' past-date' : ''}">${slotsHTML}</td>`;
                 } else {
-                    bodyHTML += `
-                        <td class="slot-cell">
-                            <div class="empty-slot">
-                                <span>—</span>
-                                <button class="add-slot-btn" data-date="${date}" data-time="${slot.hour}:00" title="Add slot">
-                                    <i class="fas fa-plus-circle"></i>
-                                </button>
-                            </div>
-                        </td>
-                    `;
+                    // Show "+" only if date is not past AND has no slots at all
+                    if (!isPast && !hasAnySlot) {
+                        bodyHTML += `
+                            <td class="slot-cell">
+                                <div class="empty-slot">
+                                    <span>—</span>
+                                    <button class="add-slot-btn" data-date="${date}" data-time="${slot.hour}:00" title="Add slot">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        bodyHTML += `<td class="slot-cell past-date"><div class="empty-slot" style="opacity:0.4; pointer-events:none;"><span>—</span></div></td>`;
+                    }
                 }
             }
             bodyHTML += '</tr>';
         }
-        
+
         tbody.innerHTML = bodyHTML;
         attachSlotEventListeners();
     }
@@ -1018,15 +1031,18 @@
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const startDayOfWeek = firstDay.getDay();
-        
+
         // Adjust to Monday first (0 = Sunday, so shift)
         const adjustedStartDay = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
-        
+
         const daysInMonth = lastDay.getDate();
         const prevMonthDays = new Date(year, month, 0).getDate();
-        
+
+        // Get today's date as string for comparison
+        const todayStr = formatDate(new Date());
+
         const dates = [];
-        
+
         // Previous month days
         for (let i = adjustedStartDay - 1; i >= 0; i--) {
             const day = prevMonthDays - i;
@@ -1037,7 +1053,7 @@
                 isToday: false
             });
         }
-        
+
         // Current month days
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDateObj = new Date(year, month, day);
@@ -1045,10 +1061,10 @@
                 date: formatDate(currentDateObj),
                 day: day,
                 isCurrentMonth: true,
-                isToday: formatDate(currentDateObj) === formatDate(new Date())
+                isToday: formatDate(currentDateObj) === todayStr
             });
         }
-        
+
         // Next month days (to fill grid)
         const remainingCells = 42 - dates.length; // 6 rows * 7 days = 42
         for (let day = 1; day <= remainingCells; day++) {
@@ -1059,7 +1075,7 @@
                 isToday: false
             });
         }
-        
+
         // Render headers (days of week)
         const thead = document.getElementById('tableHeaders');
         const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -1069,30 +1085,35 @@
                 ${weekdays.map(day => `<th>${day}</th>`).join('')}
             </tr>
         `;
-        
+
         // Build table body (rows of weeks)
         const tbody = document.getElementById('timeSlotsBody');
         let bodyHTML = '';
-        
+
         for (let i = 0; i < dates.length; i += 7) {
             const weekDates = dates.slice(i, i + 7);
             bodyHTML += '<tr>';
-            
+
             // First column shows week number or date range
             const firstDate = weekDates[0];
             const lastDate = weekDates[6];
-            bodyHTML += `<td class="week-number">Week ${Math.ceil((i + 1) / 7)}<br><small>${firstDate.day}/${lastDate.day}</small>${firstDate.isCurrentMonth || lastDate.isCurrentMonth ? '' : ''}</td>`;
-            
+            bodyHTML += `<td class="week-number">Week ${Math.ceil((i + 1) / 7)}<br><small>${firstDate.day}/${lastDate.day}</small></td>`;
+
             for (const date of weekDates) {
                 const hasSlots = Object.keys(timeSlotsData).some(key => key.startsWith(date.date));
                 const dateObj = new Date(date.date);
                 const dayOfMonth = dateObj.getDate();
-                
+
+                // 🆕 Check if this date is in the past
+                const isPast = date.date < todayStr;
+
                 let cellClass = 'month-cell';
                 if (!date.isCurrentMonth) cellClass += ' other-month';
                 if (date.isToday) cellClass += ' today';
                 if (hasSlots) cellClass += ' has-slots';
-                
+                // 🆕 Add 'past' class if date is before today
+                if (isPast) cellClass += ' past';
+
                 bodyHTML += `
                     <td class="${cellClass}" data-date="${date.date}">
                         <div class="month-day">${dayOfMonth}</div>
@@ -1104,13 +1125,15 @@
             }
             bodyHTML += '</tr>';
         }
-        
+
         tbody.innerHTML = bodyHTML;
-        
-        // Add click handlers for month view cells
-        document.querySelectorAll('.month-cell.has-slots').forEach(cell => {
-            cell.addEventListener('click', () => {
-                const date = cell.dataset.date;
+
+        // 🆕 Attach click handlers only to non-past cells with slots
+        document.querySelectorAll('.month-cell.has-slots:not(.past)').forEach(cell => {
+            cell.addEventListener('click', function(e) {
+                // Prevent opening for past dates (double-safe)
+                const date = this.dataset.date;
+                if (date < todayStr) return;
                 showSlotsForDate(date);
             });
         });
@@ -1118,24 +1141,38 @@
     
     // Show slots dialog for a specific date (month view)
     function showSlotsForDate(date) {
-        const slotsForDate = Object.entries(timeSlotsData)
-            .filter(([key]) => key.startsWith(date))
-            .map(([key, slot]) => slot);
-        
-        if (slotsForDate.length === 0) return;
-        
-        // Create modal to show slots
+        const todayStr = formatDate(new Date());
+        if (date < todayStr) {
+            showNotification('Cannot manage slots for past dates.', 'error');
+            return;
+        }
+
+        // Get slots for this date (both data structures)
+        let slotsForDate = [];
+        if (Array.isArray(timeSlotsData[date])) {
+            slotsForDate = timeSlotsData[date];
+        } else {
+            slotsForDate = Object.entries(timeSlotsData)
+                .filter(([key]) => key.startsWith(date))
+                .map(([key, slot]) => slot);
+        }
+
+        if (slotsForDate.length === 0) {
+            showNotification('No slots found for this date.', 'error');
+            return;
+        }
+
         let modalHtml = `
             <div id="slotsDialog" class="modal" style="display: flex;">
                 <div class="modal-content" style="max-width: 500px;">
                     <div class="modal-header">
                         <h3>Time Slots for ${new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
-                        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                        <button class="modal-close" data-dismiss="modal">&times;</button>
                     </div>
                     <div class="modal-body">
                         <div class="slots-list">
         `;
-        
+
         slotsForDate.forEach(slot => {
             modalHtml += `
                 <div class="slot-item-dialog ${slot.status === 'blocked' ? 'blocked' : ''}">
@@ -1148,42 +1185,44 @@
                 </div>
             `;
         });
-        
+
         modalHtml += `
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
-                        <button class="btn-primary" id="addSlotFromDialog" data-date="${date}">Add New Slot</button>
+                        <button class="btn-secondary" data-dismiss="modal">Close</button>
+                        <!-- No "Add New Slot" button – one slot per date is enforced -->
                     </div>
                 </div>
             </div>
         `;
-        
-        // Remove existing dialog if any
+
         const existingDialog = document.getElementById('slotsDialog');
         if (existingDialog) existingDialog.remove();
-        
+
         document.body.insertAdjacentHTML('beforeend', modalHtml);
-        
-        // Add event listeners
+
+        // Event listeners for close, edit, delete
+        document.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.modal').remove();
+            });
+        });
+
         document.querySelectorAll('.edit-slot-dialog').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.getElementById('slotsDialog')?.remove();
-                editSlot(btn.dataset.id);
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                this.closest('.modal').remove();
+                editSlot(id);
             });
         });
-        
+
         document.querySelectorAll('.delete-slot-dialog').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.getElementById('slotsDialog')?.remove();
-                deleteSlot(btn.dataset.id);
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                this.closest('.modal').remove();
+                deleteSlot(id);
             });
-        });
-        
-        document.getElementById('addSlotFromDialog')?.addEventListener('click', () => {
-            document.getElementById('slotsDialog')?.remove();
-            openAddModal(document.getElementById('addSlotFromDialog').dataset.date, '09:00');
         });
     }
     
@@ -1231,9 +1270,15 @@
     
     // Open add modal
     function openAddModal(date, time) {
+        const today = new Date().toISOString().split('T')[0];
         document.getElementById('modalTitle').textContent = 'Add Time Slot';
         document.getElementById('slotId').value = '';
-        document.getElementById('slotDate').value = date;
+        
+        // Set the date and min attribute
+        const dateInput = document.getElementById('slotDate');
+        dateInput.value = date;
+        dateInput.setAttribute('min', today);   // <-- prevents selecting past dates
+        
         document.getElementById('startTime').value = time;
         document.getElementById('endTime').value = '';
         document.getElementById('maxBookings').value = '1';
@@ -1309,11 +1354,21 @@
     
     // Navigation handlers
     function previousPeriod() {
+        let newDate = new Date(currentDate);
         if (currentView === 'week') {
-            currentDate.setDate(currentDate.getDate() - 7);
+            newDate.setDate(newDate.getDate() - 7);
+            const { start: todayStart } = getWeekRange(new Date());
+            if (newDate < todayStart) {
+                newDate = new Date(); // reset to today
+            }
         } else {
-            currentDate.setMonth(currentDate.getMonth() - 1);
+            newDate.setMonth(newDate.getMonth() - 1);
+            const today = new Date();
+            if (newDate < new Date(today.getFullYear(), today.getMonth(), 1)) {
+                newDate = today;
+            }
         }
+        currentDate = newDate;
         updateHeaderDisplay();
         loadTimeSlots();
     }
@@ -1458,7 +1513,12 @@
             if (response.ok && data.success) {
                 showNotification(data.message, 'success');
                 document.getElementById('slotModal').style.display = 'none';
-                loadTimeSlots(); // Refresh the table
+
+                // ---- NEW: Navigate to the slot's date ----
+                const slotDate = new Date(rawDate + 'T00:00:00');
+                currentDate = slotDate;               // update the global date
+                updateHeaderDisplay();                // refresh the header (week/month label)
+                loadTimeSlots();                     // reload data for the new range
             } else {
                 showNotification(data.message || 'Error saving slot', 'error');
             }
@@ -1494,6 +1554,11 @@
             if (data.success) {
                 showNotification(data.message, 'success');
                 document.getElementById('bulkModal').style.display = 'none';
+
+                // ---- NEW: Navigate to the start date ----
+                const startDate = new Date(formData.start_date + 'T00:00:00');
+                currentDate = startDate;
+                updateHeaderDisplay();
                 loadTimeSlots();
             } else {
                 showNotification(data.message || 'Error creating slots', 'error');

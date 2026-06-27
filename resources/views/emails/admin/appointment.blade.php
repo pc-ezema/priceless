@@ -1,3 +1,5 @@
+{{-- resources/views/emails/admin/appointment.blade.php --}}
+
 @component('mail::message')
 {{-- Logo --}}
 <p style="text-align: center; margin-bottom: 20px;">
@@ -7,6 +9,7 @@
 # 🎉 New Appointment Booking
 
 A new appointment has been successfully booked!  
+**Booking ID:** #{{ $appointment->id }}
 
 ---
 
@@ -15,16 +18,34 @@ A new appointment has been successfully booked!
 - **Email:** {{ $appointment->email }}  
 - **Phone:** {{ $appointment->phone }}
 
+---
+
 ## 💇‍♀️ Appointment Details
 - **Service:** {{ $appointment->service }}  
-- **Add-ons:**  
-@if(!empty($appointment->addons))
-    {{ implode(", ", $appointment->addons) }}
-@else
-    None
-@endif
 - **Date:** {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('l, F j, Y') }}  
 - **Time:** {{ \Carbon\Carbon::parse($appointment->appointment_time)->format('g:i A') }}
+
+---
+
+## 💰 Payment Breakdown
+
+| Item | Amount |
+|------|--------|
+| **{{ $service->name ?? $appointment->service }}** | ${{ number_format($service->price ?? 0, 2) }} |
+@foreach($addons as $addon)
+| {{ $addon->name }} (add‑on) | +${{ number_format($addon->price, 2) }} |
+@endforeach
+| **Subtotal** | **${{ number_format($subtotal, 2) }}** |
+| **Deposit (30%)** | **${{ number_format($deposit, 2) }}** |
+| **Balance Due** | **${{ number_format($balance, 2) }}** |
+
+> 💡 The customer is required to pay the **30% deposit** to secure the booking.  
+> **Bank details for deposit:**  
+> Account Name: Priceless Beauty Touch  
+> Sort Code: 60-84-64  
+> Account Number: 87478568
+
+---
 
 @if($appointment->notes)
 ## 📝 Special Instructions

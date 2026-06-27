@@ -241,12 +241,13 @@
                                     <optgroup label="{{ $categoryIcons[$category] ?? '📌' }} {{ $category }}">
                                         @foreach($services as $service)
                                         @php
+                                        $serviceName = $service->name;
                                         $priceDisplay = $service->price > 0 ? '£' . number_format($service->price, 2) : 'Price on request';
                                         $durationDisplay = $service->duration ? " ({$service->duration})" : '';
                                         $serviceValue = "{$service->name} - {$priceDisplay}{$durationDisplay}";
                                         $optionText = "{$service->name} - {$priceDisplay}{$durationDisplay}";
                                         @endphp
-                                        <option value="{{ $serviceValue }}"
+                                        <option value="{{ $serviceName }}"
                                             data-price="{{ $service->price }}"
                                             data-duration="{{ $service->duration }}"
                                             data-category="{{ $category }}">

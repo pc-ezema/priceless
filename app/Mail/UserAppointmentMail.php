@@ -3,7 +3,9 @@
 
 namespace App\Mail;
 
+use App\Models\Addon;
 use App\Models\Appointment;
+use App\Models\Service;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -18,14 +20,38 @@ class UserAppointmentMail extends Mailable
 
     public $appointment;
     public $isWaxingService;
+    public $service;
+    public $addons = [];
+    public $subtotal;
+    public $deposit;
+    public $balance;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(Appointment $appointment, $isWaxingService = false)
+    public function __construct(Appointment $appointment, $isWaxingService = false, Service $service)
     {
         $this->appointment = $appointment;
         $this->isWaxingService = $isWaxingService;
+        $this->service = $service;
+
+        // Fetch add-ons
+        // Assuming $appointment->addons is an array of add-on names or IDs
+        // We'll try to get the add-on models
+        $addonNames = is_array($appointment->addons) ? $appointment->addons : [];
+        $addonModels = Addon::whereIn('name', $addonNames)->where('is_active', true)->get();
+
+        // If the appointment stores IDs instead, adjust accordingly:
+        // $addonIds = $appointment->addon_ids ?? [];
+        // $addonModels = Addon::whereIn('id', $addonIds)->get();
+
+        $this->addons = $addonModels;
+
+        // Calculate totals
+        $addonTotal = $addonModels->sum('price');
+        $this->subtotal = $service->price + $addonTotal;
+        $this->deposit = round($this->subtotal * 0.30, 2);
+        $this->balance = round($this->subtotal - $this->deposit, 2);
     }
 
     /**
@@ -46,8 +72,13 @@ class UserAppointmentMail extends Mailable
         return new Content(
             markdown: 'emails.user.appointment',
             with: [
-                'appointment' => $this->appointment,
-                'isWaxingService' => $this->isWaxingService,
+                'appointment'    => $this->appointment,
+                'isWaxingService'=> $this->isWaxingService,
+                'service'        => $this->service,
+                'addons'         => $this->addons,
+                'subtotal'       => $this->subtotal,
+                'deposit'        => $this->deposit,
+                'balance'        => $this->balance,
             ]
         );
     }

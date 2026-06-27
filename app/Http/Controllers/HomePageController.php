@@ -173,26 +173,28 @@ class HomePageController extends Controller
     }
 
     /**
-     * Clean service name by removing price and duration
+     * Clean service name by removing price and duration from the end.
      */
     private function cleanServiceName($serviceName)
     {
-        // Remove everything after " - "
-        $dashPosition = strpos($serviceName, ' - ');
-        if ($dashPosition !== false) {
-            $serviceName = substr($serviceName, 0, $dashPosition);
+        // Step 1: Remove trailing price (with or without a dash) and optional duration in parentheses.
+        // Pattern matches: optional spaces, an optional dash (hyphen or en dash), 
+        // then £ and price, then optional spaces and a duration in parentheses at the very end.
+        $pattern = '/\s*[–-]?\s*£[\d.]+(\s*\([^)]*\))?$/u';
+        $cleaned = preg_replace($pattern, '', $serviceName);
+
+        // Step 2: If nothing was removed, try removing just a trailing price (no dash).
+        if ($cleaned === $serviceName) {
+            $pattern2 = '/\s*£[\d.]+(\s*\([^)]*\))?$/u';
+            $cleaned = preg_replace($pattern2, '', $serviceName);
         }
-        
-        // Remove price patterns (£XX.XX)
-        $serviceName = preg_replace('/\s*£[\d.]+.*$/', '', $serviceName);
-        
-        // Remove duration patterns ((Xh Xm) or (X mins))
-        $serviceName = preg_replace('/\s*\([^)]*\)\s*$/', '', $serviceName);
-        
-        // Remove trailing dash
-        $serviceName = rtrim($serviceName, ' -');
-        
-        return trim($serviceName);
+
+        // Step 3: Remove any leftover trailing parentheses (if they were not part of the price block).
+        // This is safe because we only remove parentheses that are now at the very end.
+        $cleaned = preg_replace('/\s*\([^)]*\)$/', '', $cleaned);
+
+        // Step 4: Trim any trailing dashes or extra spaces.
+        return trim($cleaned, ' -–');
     }
 
     public function storeAppointment(Request $request)
@@ -249,7 +251,7 @@ class HomePageController extends Controller
         $isWaxingService = false;
 
         // Usage
-        $cleanedServiceName = $this->cleanServiceName($validated['service']);
+        $cleanedServiceName = $validated['service'];
         
         // Check from services table (if you have one)
         $service = Service::where('name', $cleanedServiceName)->first();
@@ -260,12 +262,12 @@ class HomePageController extends Controller
         // ---- SEND EMAILS ----
         try {
             // Send email to admin
-            Mail::to(" admin@pricelessbeautytouch.co.uk")
-                ->send(new AdminAppointmentMail($appointment));
+            Mail::to("admin@pricelessbeautytouch.co.uk")
+                ->send(new AdminAppointmentMail($appointment, $service));
 
             // Send email to user with waxing documents if applicable
             Mail::to($appointment->email)
-                ->send(new UserAppointmentMail($appointment, $isWaxingService));
+                ->send(new UserAppointmentMail($appointment, $isWaxingService, $service));
                 
         } catch (\Exception $e) {
             // Log the error or handle it as needed
@@ -664,7 +666,7 @@ class HomePageController extends Controller
         $endDate = $request->get('end_date');
         
         $slots = TimeSlot::whereBetween('date', [$startDate, $endDate])->get();
-        
+
         $data = [];
         foreach ($slots as $slot) {
             $hour = date('G', strtotime($slot->start_time));
@@ -686,13 +688,32 @@ class HomePageController extends Controller
     {
         $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->get('end_date', Carbon::now()->endOfMonth()->toDateString());
-        
+
         $timeSlots = TimeSlot::whereBetween('date', [$startDate, $endDate])
             ->orderBy('date')
             ->orderBy('start_time')
-            ->get()
-            ->groupBy('date');
-        
+            ->get();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            $slotsByDate = [];
+            foreach ($timeSlots as $slot) {
+                $date = $slot->date;
+                if (!isset($slotsByDate[$date])) {
+                    $slotsByDate[$date] = [];
+                }
+                $slotsByDate[$date][] = [
+                    'id'               => $slot->id,
+                    'start_time'       => $slot->start_time,
+                    'end_time'         => $slot->end_time,
+                    'max_bookings'     => $slot->max_bookings,
+                    'current_bookings' => $slot->current_bookings,
+                    'status'           => $slot->status,
+                    'hour'             => (int) date('G', strtotime($slot->start_time)),
+                ];
+            }
+            return response()->json($slotsByDate);
+        }
+
         return view('admin.time-slots.index', compact('timeSlots', 'startDate', 'endDate'));
     }
 
@@ -704,29 +725,42 @@ class HomePageController extends Controller
     public function storeTimeSlot(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required',
-            'end_time' => 'required|after:start_time',
-            'max_bookings' => 'required|integer|min:1|max:10',
-            'status' => 'required|in:available,blocked'
+            'date'          => 'required|date|after_or_equal:today',
+            'start_time'    => 'required',
+            'end_time'      => 'required|after:start_time',
+            'max_bookings'  => 'required|integer|min:1',
+            'status'        => 'required|in:available,blocked'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        // Check for existing slot
-        $exists = TimeSlot::where('date', $request->date)->exists();
+        // ✅ Keep overlap check – prevents overlapping times on the same day
+        $overlap = TimeSlot::where('date', $request->date)
+            ->where(function ($query) use ($request) {
+                $query->whereBetween('start_time', [$request->start_time, $request->end_time])
+                    ->orWhereBetween('end_time', [$request->start_time, $request->end_time])
+                    ->orWhere(function ($q) use ($request) {
+                        $q->where('start_time', '<=', $request->start_time)
+                            ->where('end_time', '>=', $request->end_time);
+                    });
+            })->exists();
 
-        if ($exists) {
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'A time slot for this date already exists. Please edit the existing slot or choose a different date.'], 422);
-            }
+        if ($overlap) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This time overlaps with an existing slot on the same day.'
+            ], 422);
         }
 
         $timeSlot = TimeSlot::create($request->all());
 
-        return response()->json(['success' => true, 'message' => 'Time slot created successfully', 'data' => $timeSlot]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Time slot created successfully',
+            'data'    => $timeSlot
+        ]);
     }
 
     public function editTimeSlot(TimeSlot $timeSlot)
@@ -753,7 +787,7 @@ class HomePageController extends Controller
         $validator = Validator::make($request->all(), [
             'start_time' => 'required',
             'end_time' => 'required|after:start_time',
-            'max_bookings' => 'required|integer|min:1|max:10',
+            'max_bookings' => 'required|integer|min:1',
             'status' => 'required|in:available,blocked'  // Removed 'booked' as it's auto-managed
         ]);
 
